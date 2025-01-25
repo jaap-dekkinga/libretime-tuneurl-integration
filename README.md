@@ -81,6 +81,7 @@ Check the docker conatiner id by running below command
     docker-compose ps
 
 Then use that container id to copy local file fromj this repo in docker container
+
     For Legacy contanier
         sudo docker cp playlist.phtml eba6897eb5d1:var/www/html/application/views/scripts/playlist/playlist.phtml
         sudo docker cp update.phtml eba6897eb5d1:var/www/html/application/views/scripts/playlist/update.phtml
