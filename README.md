@@ -1,72 +1,128 @@
 # [![LibreTime](https://github.com/libretime/website/blob/main/static/img/logo-512px.png)](https://github.com/libretime/libretime)
 
-[![Financial Contributors on Open Collective](https://opencollective.com/libretime/all/badge.svg?label=financial+contributors)](https://opencollective.com/libretime)
+To setup Libretime app in local, Please follow these steps
 
-LibreTime makes it easy to run your own online or terrestrial radio station. It
-is a community managed fork of the AirTime project.
+Install docker and docker-compose using below link
+•	https://libretime.org/docs/admin-manual/install/install-using-docker/
 
-It is managed by a friendly inclusive community of stations from around the
-globe that use, document and improve LibreTime. Join us in fixing bugs and in
-defining how we manage the codebase going forward.
+Setup Libretime app using below link 
+    https://libretime.org/docs/admin-manual/install/install-using-docker/
 
-Check out the [documentation](https://libretime.org/docs/) for more information and
-start broadcasting!
+Install Apache using below link
+    https://ubuntu.com/tutorials/install-and-configure-apache
 
-Please note that LibreTime is released with a [Contributor Code
-of Conduct](https://github.com/libretime/organization/blob/main/CODE_OF_CONDUCT.md).
-By participating in this project you agree to abide by its terms.
+Setup reverse proxy using below link
+    https://libretime.org/docs/admin-manual/install/reverse-proxy/
 
-You can find details about our development process in the
-[contributing](./CONTRIBUTING.md) guide.
+Install SSL certificate by adding below lines in default-ssl.conf file
+    SSLEngine on
+    SSLCertificateFile      /home/ubuntu/tuneurl-demo.com_ssl_certificate.cer
+    SSLCertificateKeyFile   /home/ubuntu/_.tuneurl-demo.com_private_key.key
+    <Location />
+            ProxyPass           http://localhost:8080/
+            ProxyPassReverse    http://localhost:8080/
+    </Location>
 
-## Support
 
-To get support for any questions or problems you might have using the software
-we have a forum at [discourse.libretime.org](https://discourse.libretime.org).
-We are moving towards using the forum to provide community support and reserving
-the github issue queue for confirmed bugs and well-formed feature requests.
+Update config.yml file to stream mp3 format audio. in Icecast section change ogg format to mp3 in first stream for this and enable second stream
 
-You can also contact us through [Matrix
-(#libretime:matrix.org)](https://matrix.to/#/#libretime:matrix.org)
-where you can talk with other users and developers.
+ audio:
+          format: mp3
+          bitrate: 256
 
-## Contributors
 
-### Code Contributors
+Enable 8443 port by adding below line in Ports..conf
 
-This project exists thanks to all the people who [contribute](CONTRIBUTING.md).
+    Listen 8443
 
-### Financial Contributors
+Create 8443-to-8000.conf file by using below command to redirect 8433 port connection to 8000
 
-Become a financial contributor and help us sustain our community on
-[OpenCollective](https://opencollective.com/libretime/contribute).
+    sudo vi /etc/apache2/sites-available/8443-to-8000.conf
 
-#### Individuals
+then add this content in this file
+    <VirtualHost *:8443>
+        ServerName ec2-18-119-105-1.us-east-2.compute.amazonaws.com
 
-<a href="https://opencollective.com/libretime">
-    <img src="https://opencollective.com/libretime/individuals.svg?width=890">
-</a>
+        SSLEngine on
+        SSLCertificateFile      /home/ubuntu/tuneurl-demo.com_ssl_certificate.cer
+        SSLCertificateKeyFile   /home/ubuntu/_.tuneurl-demo.com_private_key.key
 
-#### Organizations
+        <Location />
+            ProxyPass           http://localhost:8000/
+            ProxyPassReverse    http://localhost:8000/
+        </Location>
 
-[Support](https://opencollective.com/libretime/contribute) this project with
-your organization. Your logo will show up here with a link to your website.
+        ErrorLog ${APACHE_LOG_DIR}/8443-error.log
+        CustomLog ${APACHE_LOG_DIR}/8443-access.log combined
+    </VirtualHost>
 
-<a href="https://opencollective.com/libretime">
-    <img src="https://opencollective.com/libretime/organizations.svg?width=890">
-</a>
+Enter in mysql container by running below command. where 8a3bb21dec80 is mysql container id
+     docker exec -it 8a3bb21dec80 bash
 
-## License
+Add tuneurl_id column in playlistcontents Table so that tuneurl id can be saved in the Database when the Tuneurl is created
 
-LibreTime is free software: you can redistribute it and/or
-modify it under the terms of the GNU Affero General Public
-License as published by the Free Software Foundation,
-version 3 of the License.
+ALTER TABLE cc_playlistcontents ADD tuneurl_id INTEGER NULL;
 
-## Copyright
+Run this docker command to setup the app
 
-Copyright (c) 2011-2017 Sourcefabric z.ú.
+    docker-compose run --rm api libretime-api migrate
 
-Copyright (c) 2017-2023 LibreTime Community
+Finally, start the services, and check that they're running using the following commands:
 
-Please refer to the [LEGACY](./LEGACY.md) file for more information.
+    docker-compose up -d
+
+    docker-compose ps
+    docker-compose logs -f
+
+
+
+Check the docker conatiner id by running below command
+
+     docker-compose ps
+
+Then use that container id to copy local file fromj this repo in docker container
+    For Legacy container
+•	  sudo docker cp playlist.phtml eba6897eb5d1:var/www/html/application/views/scripts/playlist/playlist.phtml
+•	  sudo docker cp update.phtml eba6897eb5d1:var/www/html/application/views/scripts/playlist/update.phtml
+•	  sudo docker cp dashboard.js eba6897eb5d1:var/www/html/public/js/airtime/dashboard/dashboard.js
+•	  sudo docker cp spl.js eba6897eb5d1:var/www/html/public/js/airtime/library/spl.js
+•	  sudo docker cp library.js eba6897eb5d1:var/www/html/public/js/airtime/library/library.js
+•	  sudo docker cp playlist_builder.css eba6897eb5d1:var/www/html/public/css/playlist_builder.css
+•	  sudo docker cp loader.gif eba6897eb5d1:var/www/html/public/images/loader.gif
+	
+•	  sudo docker cp RabbitMq.php eba6897eb5d1:var/www/html/application/models/RabbitMq.php
+•	  sudo docker cp Playlist.php eba6897eb5d1:var/www/html/application/models/Playlist.php
+•	  sudo docker cp PlaylistController.php eba6897eb5d1:var/www/html/application/controllers/PlaylistController.php
+•	  sudo docker cp CcFiles.php eba6897eb5d1:var/www/html/application/models/airtime/CcFiles.php
+•	  sudo docker cp MediaController.php eba6897eb5d1:var/www/html/application/modules/rest/controllers/MediaController.php
+•	  sudo docker cp MediaService.php eba6897eb5d1:var/www/html/application/services/MediaService.php
+•	  sudo docker cp BaseCcBlockcontents.php eba6897eb5d1:var/www/html/application/models/airtime/om/BaseCcBlockcontents.php
+•	  sudo docker cp BaseCcBlockcontentsPeer.php eba6897eb5d1:var/www/html/application/models/airtime/om/BaseCcBlockcontentsPeer.php
+•	  sudo docker cp BaseCcPlaylistcontents.php eba6897eb5d1:var/www/html/application/models/airtime/om/BaseCcPlaylistcontents.php
+•	  sudo docker cp BaseCcPlaylistcontentsPeer.php eba6897eb5d1:var/www/html/application/models/airtime/om/BaseCcPlaylistcontentsPeer.php
+•	  sudo docker cp CcPlaylistcontentsTableMap.php eba6897eb5d1:var/www/html/application/models/airtime/map/CcPlaylistcontentsTableMap.php
+    
+    For Analyzer container
+•	  sudo docker cp message_listener.py   43e67190ab9c:src/libretime_analyzer/message_listener.py
+•	  sudo docker cp pipeline.py 		  43e67190ab9c:src/libretime_analyzer/pipeline/pipeline.py
+•	  sudo docker cp analyze_replaygain.py 43e67190ab9c:src/libretime_analyzer/pipeline/analyze_replaygain.py
+•	  sudo docker cp _ffmpeg.py            43e67190ab9c:src/libretime_analyzer/pipeline/_ffmpeg.py
+
+Upload Trigger-Audio.mp3 file using Upload button in Libretime app. then run this query to update the trigger audio metadata
+
+update cc_files set mime='audio/mp3', ftype='audioclip', filepath='imported/1/Trigger-Audio.mp3', import_status=0, bit_rate=16000, sample_rate=11025, length='00:00:01.52', cueout='00:00:01.52' where id=1;
+
+update cc_files set  length='00:00:01.44', cueout='00:00:01.44', filesize=58618, bit_rate=326395, channels=2 where id=1;
+
+
+
+
+
+
+
+
+
+
+
+
+
